@@ -123,7 +123,7 @@ export default function Home() {
     }
   }
 
-  // 5. AUTO FETCH KODE POS SELURUH INDONESIA (BEBAS CORS / FAST CDN)
+  // 5. AUTO FETCH KODE POS AKURAT SELURUH INDONESIA
   const handleSubDistrictChange = (e) => {
     const subId = e.target.value
     const subObj = subDistricts.find(s => s.id === subId)
@@ -133,46 +133,30 @@ export default function Home() {
       setLoadingZip(true)
       setPostalCode('')
 
-      // Menggunakan CDN Raw Kode Pos Indonesia Resmi & Terlengkap
-      const query = encodeURIComponent(`${subObj.name} ${selectedDistrict.name}`)
-      fetch(`https://kodepos-2d475.firebaseio.com/kodepos/${encodeURIComponent(selectedCity.name.toLowerCase().replace(/kota |kabupaten /g, ''))}.json`)
+      const query = subObj.name.toLowerCase()
+
+      fetch(`https://kodepos.now.sh/search?q=${encodeURIComponent(query)}`)
         .then(res => res.json())
-        .then(data => {
-          if (data) {
-            const list = Object.values(data)
-            const matched = list.find(
-              item => item.kelurahan.toLowerCase() === subObj.name.toLowerCase()
-            ) || list.find(
-              item => item.kecamatan.toLowerCase() === selectedDistrict.name.toLowerCase()
+        .then(resData => {
+          if (resData && resData.data && resData.data.length > 0) {
+            const currentDist = selectedDistrict.name.toLowerCase()
+            const matched = resData.data.find(item => 
+              item.subdistrict?.toLowerCase().includes(currentDist) ||
+              item.urban?.toLowerCase().includes(query)
             )
 
-            if (matched && matched.kodepos) {
-              setPostalCode(matched.kodepos.toString())
+            if (matched && matched.postalcode) {
+              setPostalCode(matched.postalcode.toString())
             } else {
-              setPostalCode(list[0]?.kodepos?.toString() || '15413')
+              setPostalCode(resData.data[0].postalcode.toString())
             }
           } else {
-            // Backup jika data spesifik kota tidak ditemukan
-            fetch(`https://api.binderbyte.com/v1/kodepos?api_key=free&query=${query}`)
-              .then(r => r.json())
-              .then(res => {
-                if(res?.data?.[0]?.code) setPostalCode(res.data[0].code)
-                else setPostalCode('15413')
-              })
-              .catch(() => setPostalCode('15413'))
+            setPostalCode('')
           }
         })
-        .catch(() => {
-          // Fallback jika network error, auto-generate kode pos standar wilayah
-          const provName = selectedProv.name.toUpperCase()
-          let defaultZip = '15413'
-          if (provName.includes('JAKARTA')) defaultZip = '12110'
-          else if (provName.includes('JAWA BARAT')) defaultZip = '40111'
-          else if (provName.includes('JAWA TENGAH')) defaultZip = '50111'
-          else if (provName.includes('JAWA TIMUR')) defaultZip = '60111'
-          else if (provName.includes('SUMATERA')) defaultZip = '20111'
-          else if (provName.includes('BALI')) defaultZip = '80111'
-          setPostalCode(defaultZip)
+        .catch(err => {
+          console.error('Error fetching postal code:', err)
+          setPostalCode('')
         })
         .finally(() => setLoadingZip(false))
     } else {
@@ -223,7 +207,6 @@ export default function Home() {
         { id: 'jnt-ez', courier: 'J&T', service: 'EZ (Express)', price: 16000, etd: '2-3 hari' },
       ]
     } else {
-      // LUAR PULAU JAWA (SUMATERA, KALIMANTAN, SULAWESI, PAPUA, BALI, DLSB)
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG (Luar Pulau)', price: 35000, etd: '3-5 hari' },
         { id: 'sicepat-gokil', courier: 'SiCepat', service: 'GOKIL (Cargo)', price: 28000, etd: '5-7 hari' },
