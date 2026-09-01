@@ -17,6 +17,7 @@ export default function Home() {
   const [cities, setCities] = useState([])
   const [districts, setDistricts] = useState([])
 
+  const [loadingProvinces, setLoadingProvinces] = useState(false)
   const [loadingCities, setLoadingCities] = useState(false)
   const [loadingDistricts, setLoadingDistricts] = useState(false)
 
@@ -29,7 +30,7 @@ export default function Home() {
   const [addrEmail, setAddrEmail] = useState('')
   const [addrLabel, setAddrLabel] = useState('Rumah')
   const [addrDetail, setAddrDetail] = useState('')
-  
+
   const [selectedProvObj, setSelectedProvObj] = useState(null)
   const [selectedCityObj, setSelectedCityObj] = useState(null)
   const [selectedDistrictObj, setSelectedDistrictObj] = useState(null)
@@ -42,18 +43,25 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  // 1. Fetch Seluruh Provinsi di Indonesia dari Open API saat komponen dimuat
+  // 1. Fetch Seluruh Provinsi (Bebas CORS)
   useEffect(() => {
-    fetch('https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json')
-      .then(res => res.json())
-      .then(data => setProvinces(data))
-      .catch(err => console.error('Gagal load provinsi:', err))
+    setLoadingProvinces(true)
+    fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json')
+      .then((res) => res.json())
+      .then((data) => {
+        setProvinces(data)
+        setLoadingProvinces(false)
+      })
+      .catch((err) => {
+        console.error('Gagal load provinsi:', err)
+        setLoadingProvinces(false)
+      })
   }, [])
 
   // 2. Fetch Kota ketika Provinsi dipilih
   const handleProvChange = (e) => {
     const provId = e.target.value
-    const provObj = provinces.find(p => p.id === provId)
+    const provObj = provinces.find((p) => p.id === provId)
     setSelectedProvObj(provObj || null)
     setSelectedCityObj(null)
     setSelectedDistrictObj(null)
@@ -62,41 +70,43 @@ export default function Home() {
 
     if (provId) {
       setLoadingCities(true)
-      fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${provId}.json`)
-        .then(res => res.json())
-        .then(data => {
+      fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/regencies/${provId}.json`)
+        .then((res) => res.json())
+        .then((data) => {
           setCities(data)
           setLoadingCities(false)
         })
+        .catch(() => setLoadingCities(false))
     }
   }
 
   // 3. Fetch Kecamatan ketika Kota dipilih
   const handleCityChange = (e) => {
     const cityId = e.target.value
-    const cityObj = cities.find(c => c.id === cityId)
+    const cityObj = cities.find((c) => c.id === cityId)
     setSelectedCityObj(cityObj || null)
     setSelectedDistrictObj(null)
     setDistricts([])
 
     if (cityId) {
       setLoadingDistricts(true)
-      fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${cityId}.json`)
-        .then(res => res.json())
-        .then(data => {
+      fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/districts/${cityId}.json`)
+        .then((res) => res.json())
+        .then((data) => {
           setDistricts(data)
           setLoadingDistricts(false)
         })
+        .catch(() => setLoadingDistricts(false))
     }
   }
 
   const handleDistrictChange = (e) => {
     const distId = e.target.value
-    const distObj = districts.find(d => d.id === distId)
+    const distObj = districts.find((d) => d.id === distId)
     setSelectedDistrictObj(distObj || null)
   }
 
-  // SIMPAN ALAMAT & HITUNG ONGKIR DARI TANGERANG SELATAN (ORIGIN)
+  // SIMPAN ALAMAT & HITUNG ONGKIR REALISTIS DARI TANGERANG SELATAN
   const handleSaveAddress = (e) => {
     e.preventDefault()
     if (!selectedProvObj || !selectedCityObj || !selectedDistrictObj) {
@@ -117,13 +127,12 @@ export default function Home() {
     setSavedAddress(addressData)
     setShowAddressModal(false)
 
-    // HITUNG/KALKULASI ONGKIR REALISTIS DARI TANGERANG SELATAN KE TUJUAN
     const cityName = selectedCityObj.name.toUpperCase()
     const provName = selectedProvObj.name.toUpperCase()
 
     let options = []
 
-    // A. AREA LOKAL (Tangerang Selatan, Tangerang, Jakarta, Depok, Bogor, Bekasi)
+    // A. AREA LOKAL (Tangsel & Jabodetabek)
     if (cityName.includes('TANGERANG') || cityName.includes('JAKARTA') || cityName.includes('DEPOK') || cityName.includes('BOGOR') || cityName.includes('BEKASI')) {
       options = [
         { id: 'gojek-instant', courier: 'Gojek / Grab', service: 'Instant (1-3 jam)', price: cityName.includes('TANGERANG SELATAN') ? 15000 : 30000, etd: '3 Jam' },
@@ -132,7 +141,7 @@ export default function Home() {
         { id: 'jnt-ez', courier: 'J&T', service: 'EZ (Express)', price: 10000, etd: '1-2 hari' },
       ]
     } 
-    // B. AREA JAWA BARAT & BANTEN LAINNYA
+    // B. JAWA BARAT & BANTEN
     else if (provName.includes('JAWA BARAT') || provName.includes('BANTEN')) {
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 12000, etd: '2-3 hari' },
@@ -140,7 +149,7 @@ export default function Home() {
         { id: 'jnt-cargo', courier: 'J&T Cargo', service: 'Kargo / Heavy Weight', price: 25000, etd: '3-4 hari' },
       ]
     } 
-    // C. AREA JAWA TENGAH, DIY, JAWA TIMUR
+    // C. JAWA TENGAH, DIY, JAWA TIMUR
     else if (provName.includes('JAWA TENGAH') || provName.includes('YOGYAKARTA') || provName.includes('JAWA TIMUR')) {
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 18000, etd: '2-3 hari' },
@@ -148,7 +157,7 @@ export default function Home() {
         { id: 'jnt-cargo', courier: 'J&T Cargo', service: 'Kargo Hemat', price: 35000, etd: '4-5 hari' },
       ]
     } 
-    // D. LUAR JAWA (SUMATERA, BALI, KALIMANTAN, SULAWESI, NUSA TENGGARA, MALUKU, PAPUA)
+    // D. LUAR JAWA
     else {
       let basePrice = 30000
       if (provName.includes('BALI') || provName.includes('SUMATERA')) basePrice = 28000
@@ -163,27 +172,29 @@ export default function Home() {
     }
 
     setShippingOptions(options)
-    setSelectedShipping(options[0]) // Auto-select pilihan pengiriman pertama
+    setSelectedShipping(options[0])
   }
 
   const addToCart = (product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id)
       return existing
-        ? prev.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item)
+        ? prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item))
         : [...prev, { ...product, qty: 1 }]
     })
   }
 
   const updateQty = (id, delta) => {
     setCart((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const newQty = item.qty + delta
-          return newQty > 0 ? { ...item, qty: newQty } : null
-        }
-        return item
-      }).filter(Boolean)
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const newQty = item.qty + delta
+            return newQty > 0 ? { ...item, qty: newQty } : null
+          }
+          return item
+        })
+        .filter(Boolean)
     )
   }
 
@@ -212,14 +223,16 @@ export default function Home() {
       const itemSummary = cart.map((i) => `${i.name} (x${i.qty})`).join(', ')
       const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} | Ekspedisi Dari Tangsel: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
 
-      const { error: dbError } = await supabase.from('orders').insert([{
-        customer_name: savedAddress.name,
-        customer_phone: savedAddress.phone,
-        shipping_address: `${fullAddressString} | Items: ${itemSummary}`,
-        total_price: grandTotal,
-        proof_url: proofUrl,
-        status: 'pending'
-      }])
+      const { error: dbError } = await supabase.from('orders').insert([
+        {
+          customer_name: savedAddress.name,
+          customer_phone: savedAddress.phone,
+          shipping_address: `${fullAddressString} | Items: ${itemSummary}`,
+          total_price: grandTotal,
+          proof_url: proofUrl,
+          status: 'pending',
+        },
+      ])
 
       if (dbError) throw dbError
 
@@ -238,7 +251,6 @@ export default function Home() {
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#1f2937', minHeight: '100vh', background: '#f9fafb' }}>
-      
       {/* HEADER */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -247,7 +259,7 @@ export default function Home() {
             <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#008b9b' }}>YayGifty</span>
           </div>
 
-          <button onClick={() => { setCartStep(1); setIsCartOpen(true); }} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => { setCartStep(1); setIsCartOpen(true) }} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer' }}>
             <span style={{ fontSize: '1.6rem' }}>🛒</span>
             {totalItems > 0 && (
               <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '9999px', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -285,11 +297,10 @@ export default function Home() {
         </div>
       </main>
 
-      {/* DRAWER KERANJANG / REVIEW / PEMBAYARAN */}
+      {/* DRAWER KERANJANG */}
       {isCartOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ width: '100%', maxWidth: '480px', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 {cartStep > 1 && (
@@ -342,12 +353,11 @@ export default function Home() {
             {/* STEP 2: REVIEW PESANAN */}
             {cartStep === 2 && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
                 <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
                   📍 Pengiriman dikirim langsung dari Toko: <strong>Tangerang Selatan</strong>
                 </div>
 
-                {/* 1. ALAMAT PENGIRIMAN */}
+                {/* 1. ALAMAT */}
                 <div style={{ border: '1px solid #e5e7eb', borderRadius: '10px', padding: '16px' }}>
                   <div style={{ fontWeight: '700', marginBottom: '8px' }}>1. Tujuan Pengiriman</div>
                   {savedAddress ? (
@@ -367,7 +377,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* 2. DAFTAR BELANJA */}
+                {/* 2. PRODUK */}
                 <div>
                   <div style={{ fontWeight: '700', marginBottom: '12px' }}>2. Produk Dipesan</div>
                   {cart.map((item) => (
@@ -382,7 +392,7 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* 3. PILIH PENGIRIMAN */}
+                {/* 3. EKSPEDISI */}
                 <div style={{ border: '1px solid #e5e7eb', borderRadius: '10px', padding: '16px' }}>
                   <div style={{ fontWeight: '700', marginBottom: '8px' }}>3. Pilih Ekspedisi & Ongkir</div>
                   {!savedAddress ? (
@@ -405,7 +415,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* 4. RINGKASAN PEMBAYARAN */}
+                {/* 4. TOTAL */}
                 <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
                   <div style={{ fontWeight: '700', marginBottom: '12px' }}>4. Ringkasan Pembayaran</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '6px' }}>
@@ -422,7 +432,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 5. LANJUT KE PEMBAYARAN */}
                 <button
                   onClick={() => {
                     if (!savedAddress) return alert('Pilih alamat pengiriman dulu!')
@@ -436,7 +445,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* STEP 3: METHOD PEMBAYARAN */}
+            {/* STEP 3: PEMBAYARAN */}
             {cartStep === 3 && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
                 <form onSubmit={handleSubmitOrder} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -470,12 +479,11 @@ export default function Home() {
                 </form>
               </div>
             )}
-
           </div>
         </div>
       )}
 
-      {/* MODAL API WILAYAH INDONESIA */}
+      {/* MODAL WILAYAH INDONESIA */}
       {showAddressModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
@@ -488,7 +496,7 @@ export default function Home() {
               <input type="text" placeholder="Nama Lengkap Penerima" required value={addrName} onChange={(e) => setAddrName(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
               <input type="tel" placeholder="Nomor Telepon / WhatsApp" required value={addrPhone} onChange={(e) => setAddrPhone(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
               <input type="email" placeholder="Email (Opsional)" value={addrEmail} onChange={(e) => setAddrEmail(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
-              
+
               <select value={addrLabel} onChange={(e) => setAddrLabel(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
                 <option value="Rumah">Rumah</option>
                 <option value="Kantor">Kantor</option>
@@ -497,25 +505,25 @@ export default function Home() {
 
               <textarea placeholder="Alamat Detail (Jalan, Nomor Rumah, RT/RW, Patokan)" required rows={2} value={addrDetail} onChange={(e) => setAddrDetail(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
 
-              {/* 1. SELECT PROVINSI (API 38 PROVINSI) */}
+              {/* 1. PROVINSI */}
               <select required onChange={handleProvChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">-- Pilih Provinsi --</option>
+                <option value="">{loadingProvinces ? 'Memuat data provinsi...' : '-- Pilih Provinsi --'}</option>
                 {provinces.map((prov) => (
                   <option key={prov.id} value={prov.id}>{prov.name}</option>
                 ))}
               </select>
 
-              {/* 2. SELECT KOTA / KABUPATEN */}
+              {/* 2. KOTA / KABUPATEN */}
               <select required disabled={!selectedProvObj || loadingCities} onChange={handleCityChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">{loadingCities ? 'Loading data kota...' : '-- Pilih Kota / Kabupaten --'}</option>
+                <option value="">{loadingCities ? 'Memuat data kota...' : '-- Pilih Kota / Kabupaten --'}</option>
                 {cities.map((city) => (
                   <option key={city.id} value={city.id}>{city.name}</option>
                 ))}
               </select>
 
-              {/* 3. SELECT KECAMATAN */}
+              {/* 3. KECAMATAN */}
               <select required disabled={!selectedCityObj || loadingDistricts} onChange={handleDistrictChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">{loadingDistricts ? 'Loading kecamatan...' : '-- Pilih Kecamatan --'}</option>
+                <option value="">{loadingDistricts ? 'Memuat data kecamatan...' : '-- Pilih Kecamatan --'}</option>
                 {districts.map((dist) => (
                   <option key={dist.id} value={dist.id}>{dist.name}</option>
                 ))}
@@ -528,7 +536,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
     </div>
   )
 }
