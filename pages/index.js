@@ -586,3 +586,12 @@ export default function Home() {
     </div>
   )
 }
+import FormAlamat from '../lib/FormAlamat'; // atau '../components/FormAlamat'
+
+export default function Home() {
+  return (
+    <div>
+      <FormAlamat />
+    </div>
+  );
+}
