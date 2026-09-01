@@ -586,12 +586,16 @@ export default function Home() {
     </div>
   )
 }
-import FormAlamat from '../lib/FormAlamat'; // atau '../components/FormAlamat'
+import React from 'react';
+import FormAlamat from '../lib/FormAlamat'; // Sesuaikan path lokasi FormAlamat lu
 
 export default function Home() {
   return (
-    <div>
+    <main style={{ padding: '20px' }}>
+      <h1>Aplikasi YayGifty</h1>
+      
+      {/* Panggil komponen di sini */}
       <FormAlamat />
-    </div>
+    </main>
   );
 }
