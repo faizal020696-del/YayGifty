@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const PRODUCTS = [
@@ -7,19 +7,58 @@ const PRODUCTS = [
   { id: 3, name: 'Custom Dried Flower Bouquet', originalPrice: 100000, discountPercent: 50, price: 50000, image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60' },
 ]
 
+// DATA WILAYAH OFFLINE (DIJAMIN TIDAK AKAN EROR BROWSER / CORS)
+const WILAYAH_DATA = {
+  "DKI Jakarta": {
+    "Jakarta Selatan": ["Cilandak", "Jagakarsa", "Kebayoran Baru", "Kebayoran Lama", "Mampang Prapatan", "Pancasari", "Pasar Minggu", "Pesanggrahan", "Setiabudi", "Tebet"],
+    "Jakarta Barat": ["Cengkareng", "Grogol Petamburan", "Taman Sari", "Tambora", "Kebon Jeruk", "Kalideres", "Palmerah", "Kembangan"],
+    "Jakarta Pusat": ["Cempaka Putih", "Gambir", "Johar Baru", "Kemayoran", "Menteng", "Sawah Besar", "Senen", "Tanah Abang"],
+    "Jakarta Timur": ["Cakung", "Ciracas", "Duren Sawit", "Jatinegara", "Kramat Jati", "Makasar", "Matraman", "Pasar Rebo", "Pulo Gadung"],
+    "Jakarta Utara": ["Cilincing", "Kelapa Gading", "Koja", "Pademangan", "Penjaringan", "Tanjung Priok"]
+  },
+  "Banten": {
+    "Kota Tangerang Selatan": ["Ciputat", "Ciputat Timur", "Pamulang", "Pondok Aren", "Serpong", "Serpong Utara", "Setu"],
+    "Kota Tangerang": ["Batuceper", "Benda", "Cibodas", "Ciledug", "Karangtengah", "Karawaci", "Larangan", "Neglasari", "Periuk", "Pinang", "Tangerang"],
+    "Kab. Tangerang": ["Balaraja", "Cikupa", "Curug", "Kelapa Dua", "Kosambi", "Pasar Kemis", "Sepatan", "Teluknaga"],
+    "Kota Serang": ["Serang", "Cipocok Jaya", "Curug", "Kasemen", "Taktakan", "Walantaka"],
+    "Kota Cilegon": ["Cibeber", "Cilegon", "Citangkil", "Grogol", "Jombang", "Pulomerak"]
+  },
+  "Jawa Barat": {
+    "Kota Bandung": ["Andir", "Astana Anyar", "Antapani", "Arcamanik", "Bandung Kidul", "Coblong", "Cicendo"],
+    "Kab. Bogor": ["Cibinong", "Ciawi", "Cisarua", "Cileungsi", "Gunung Putri", "Parung"],
+    "Kota Bogor": ["Bogor Barat", "Bogor Selatan", "Bogor Tengah", "Bogor Timur", "Bogor Utara"],
+    "Kota Bekasi": ["Bantargebang", "Bekasi Barat", "Bekasi Selatan", "Bekasi Timur", "Bekasi Utara", "Jatiasih", "Pondok Gede"],
+    "Kota Depok": ["Beji", "Cilodong", "Cimanggis", "Cinere", "Cipayung", "Pancoran Mas", "Sawangan", "Sukmajaya"]
+  },
+  "Jawa Tengah": {
+    "Kota Semarang": ["Banyumanik", "Candisari", "Gajahmungkur", "Gayamsari", "Genuk", "Pedurungan", "Semarang Selatan"],
+    "Kota Surakarta (Solo)": ["Banjarsari", "Jebres", "Laweyan", "Pasar Kliwon", "Serengan"],
+    "Kab. Magelang": ["Borobudur", "Muntilan", "Mertoyudan", "Salaman"]
+  },
+  "DI Yogyakarta": {
+    "Kota Yogyakarta": ["Danurejan", "Gondomanan", "Jetis", "Kotagede", "Kraton", "Mantrijeron", "Merggangsan", "Umbulharjo"],
+    "Kab. Sleman": ["Depok", "Gamping", "Kalasan", "Mlati", "Ngaglik", "Sleman"]
+  },
+  "Jawa Timur": {
+    "Kota Surabaya": ["Gubeng", "Gunung Anyar", "Jambangan", "Karangpilang", "Mulyorejo", "Rungkut", "Tegalsari", "Wonokromo"],
+    "Kota Malang": ["Blimbing", "Kedungkandang", "Klojen", "Lowokwaru", "Sukun"]
+  },
+  "Bali": {
+    "Kota Denpasar": ["Denpasar Barat", "Denpasar Selatan", "Denpasar Timur", "Denpasar Utara"],
+    "Kab. Badung": ["Kuta", "Kuta Selatan", "Kuta Utara", "Mengwi"]
+  },
+  "Sumatera Utara": {
+    "Kota Medan": ["Medan Amplas", "Medan Baru", "Medan Helvetia", "Medan Johor", "Medan Kota", "Medan Petisah", "Medan Tembung"]
+  },
+  "Sulawesi Selatan": {
+    "Kota Makassar": ["Biringkanaya", "Bontoala", "Makassar", "Mamajang", "Mariso", "Panakkukang", "Rappocini", "Tamalate", "Ujung Pandang"]
+  }
+}
+
 export default function Home() {
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [cartStep, setCartStep] = useState(1) // 1: Keranjang, 2: Review Pesanan, 3: Pembayaran
-
-  // STATE API WILAYAH INDONESIA
-  const [provinces, setProvinces] = useState([])
-  const [cities, setCities] = useState([])
-  const [districts, setDistricts] = useState([])
-
-  const [loadingProvinces, setLoadingProvinces] = useState(false)
-  const [loadingCities, setLoadingCities] = useState(false)
-  const [loadingDistricts, setLoadingDistricts] = useState(false)
+  const [cartStep, setCartStep] = useState(1)
 
   // STATE ALAMAT
   const [showAddressModal, setShowAddressModal] = useState(false)
@@ -31,9 +70,9 @@ export default function Home() {
   const [addrLabel, setAddrLabel] = useState('Rumah')
   const [addrDetail, setAddrDetail] = useState('')
 
-  const [selectedProvObj, setSelectedProvObj] = useState(null)
-  const [selectedCityObj, setSelectedCityObj] = useState(null)
-  const [selectedDistrictObj, setSelectedDistrictObj] = useState(null)
+  const [selectedProv, setSelectedProv] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [selectedDistrict, setSelectedDistrict] = useState('')
 
   // STATE EKSPEDISI & PEMBAYARAN
   const [shippingOptions, setShippingOptions] = useState([])
@@ -43,73 +82,21 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  // 1. Fetch Seluruh Provinsi (Bebas CORS)
-  useEffect(() => {
-    setLoadingProvinces(true)
-    fetch('https://kanglerian.github.io/api-wilayah-indonesia/api/provinces.json')
-      .then((res) => res.json())
-      .then((data) => {
-        setProvinces(data)
-        setLoadingProvinces(false)
-      })
-      .catch((err) => {
-        console.error('Gagal load provinsi:', err)
-        setLoadingProvinces(false)
-      })
-  }, [])
-
-  // 2. Fetch Kota ketika Provinsi dipilih
   const handleProvChange = (e) => {
-    const provId = e.target.value
-    const provObj = provinces.find((p) => p.id === provId)
-    setSelectedProvObj(provObj || null)
-    setSelectedCityObj(null)
-    setSelectedDistrictObj(null)
-    setCities([])
-    setDistricts([])
-
-    if (provId) {
-      setLoadingCities(true)
-      fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/regencies/${provId}.json`)
-        .then((res) => res.json())
-        .then((data) => {
-          setCities(data)
-          setLoadingCities(false)
-        })
-        .catch(() => setLoadingCities(false))
-    }
+    setSelectedProv(e.target.value)
+    setSelectedCity('')
+    setSelectedDistrict('')
   }
 
-  // 3. Fetch Kecamatan ketika Kota dipilih
   const handleCityChange = (e) => {
-    const cityId = e.target.value
-    const cityObj = cities.find((c) => c.id === cityId)
-    setSelectedCityObj(cityObj || null)
-    setSelectedDistrictObj(null)
-    setDistricts([])
-
-    if (cityId) {
-      setLoadingDistricts(true)
-      fetch(`https://kanglerian.github.io/api-wilayah-indonesia/api/districts/${cityId}.json`)
-        .then((res) => res.json())
-        .then((data) => {
-          setDistricts(data)
-          setLoadingDistricts(false)
-        })
-        .catch(() => setLoadingDistricts(false))
-    }
+    setSelectedCity(e.target.value)
+    setSelectedDistrict('')
   }
 
-  const handleDistrictChange = (e) => {
-    const distId = e.target.value
-    const distObj = districts.find((d) => d.id === distId)
-    setSelectedDistrictObj(distObj || null)
-  }
-
-  // SIMPAN ALAMAT & HITUNG ONGKIR REALISTIS DARI TANGERANG SELATAN
+  // SIMPAN ALAMAT & HITUNG ONGKIR (ORIGIN: TANGERANG SELATAN)
   const handleSaveAddress = (e) => {
     e.preventDefault()
-    if (!selectedProvObj || !selectedCityObj || !selectedDistrictObj) {
+    if (!selectedProv || !selectedCity || !selectedDistrict) {
       return alert('Mohon pilih Provinsi, Kota, dan Kecamatan secara lengkap!')
     }
 
@@ -119,30 +106,30 @@ export default function Home() {
       email: addrEmail,
       label: addrLabel,
       detail: addrDetail,
-      province: selectedProvObj.name,
-      city: selectedCityObj.name,
-      district: selectedDistrictObj.name,
+      province: selectedProv,
+      city: selectedCity,
+      district: selectedDistrict,
     }
 
     setSavedAddress(addressData)
     setShowAddressModal(false)
 
-    const cityName = selectedCityObj.name.toUpperCase()
-    const provName = selectedProvObj.name.toUpperCase()
+    const cityUpper = selectedCity.toUpperCase()
+    const provUpper = selectedProv.toUpperCase()
 
     let options = []
 
     // A. AREA LOKAL (Tangsel & Jabodetabek)
-    if (cityName.includes('TANGERANG') || cityName.includes('JAKARTA') || cityName.includes('DEPOK') || cityName.includes('BOGOR') || cityName.includes('BEKASI')) {
+    if (cityUpper.includes('TANGERANG') || cityUpper.includes('JAKARTA') || cityUpper.includes('DEPOK') || cityUpper.includes('BOGOR') || cityUpper.includes('BEKASI')) {
       options = [
-        { id: 'gojek-instant', courier: 'Gojek / Grab', service: 'Instant (1-3 jam)', price: cityName.includes('TANGERANG SELATAN') ? 15000 : 30000, etd: '3 Jam' },
+        { id: 'gojek-instant', courier: 'Gojek / Grab', service: 'Instant (1-3 jam)', price: cityUpper.includes('TANGERANG SELATAN') ? 15000 : 30000, etd: '3 Jam' },
         { id: 'sicepat-reg', courier: 'SiCepat', service: 'REG (Reguler)', price: 9000, etd: '1-2 hari' },
         { id: 'jne-reg', courier: 'JNE', service: 'REG (Reguler)', price: 10000, etd: '1-2 hari' },
         { id: 'jnt-ez', courier: 'J&T', service: 'EZ (Express)', price: 10000, etd: '1-2 hari' },
       ]
     } 
     // B. JAWA BARAT & BANTEN
-    else if (provName.includes('JAWA BARAT') || provName.includes('BANTEN')) {
+    else if (provUpper.includes('JAWA BARAT') || provUpper.includes('BANTEN')) {
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 12000, etd: '2-3 hari' },
         { id: 'sicepat-best', courier: 'SiCepat', service: 'BEST (Next Day)', price: 18000, etd: '1 hari' },
@@ -150,7 +137,7 @@ export default function Home() {
       ]
     } 
     // C. JAWA TENGAH, DIY, JAWA TIMUR
-    else if (provName.includes('JAWA TENGAH') || provName.includes('YOGYAKARTA') || provName.includes('JAWA TIMUR')) {
+    else if (provUpper.includes('JAWA TENGAH') || provUpper.includes('YOGYAKARTA') || provUpper.includes('JAWA TIMUR')) {
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 18000, etd: '2-3 hari' },
         { id: 'sicepat-reg', courier: 'SiCepat', service: 'REG', price: 17000, etd: '2-3 hari' },
@@ -160,9 +147,8 @@ export default function Home() {
     // D. LUAR JAWA
     else {
       let basePrice = 30000
-      if (provName.includes('BALI') || provName.includes('SUMATERA')) basePrice = 28000
-      if (provName.includes('KALIMANTAN') || provName.includes('SULAWESI')) basePrice = 38000
-      if (provName.includes('PAPUA') || provName.includes('MALUKU')) basePrice = 65000
+      if (provUpper.includes('BALI') || provUpper.includes('SUMATERA')) basePrice = 28000
+      if (provUpper.includes('SULAWESI')) basePrice = 38000
 
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG (Udara)', price: basePrice, etd: '3-5 hari' },
@@ -221,7 +207,7 @@ export default function Home() {
       const proofUrl = publicUrlData.publicUrl
 
       const itemSummary = cart.map((i) => `${i.name} (x${i.qty})`).join(', ')
-      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} | Ekspedisi Dari Tangsel: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
+      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} | Ekspedisi: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
 
       const { error: dbError } = await supabase.from('orders').insert([
         {
@@ -236,7 +222,7 @@ export default function Home() {
 
       if (dbError) throw dbError
 
-      alert('Pesanan Anda berhasil dikirim! Kami akan segera memproses pengiriman dari Tangerang Selatan.')
+      alert('Pesanan Anda berhasil dikirim! Pengiriman dari Tangerang Selatan.')
       setCart([])
       setIsCartOpen(false)
       setCartStep(1)
@@ -251,6 +237,7 @@ export default function Home() {
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#1f2937', minHeight: '100vh', background: '#f9fafb' }}>
+      
       {/* HEADER */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -354,7 +341,7 @@ export default function Home() {
             {cartStep === 2 && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
-                  📍 Pengiriman dikirim langsung dari Toko: <strong>Tangerang Selatan</strong>
+                  📍 Pengiriman dari Toko: <strong>Tangerang Selatan</strong>
                 </div>
 
                 {/* 1. ALAMAT */}
@@ -405,7 +392,7 @@ export default function Home() {
                             <input type="radio" name="shipping" checked={selectedShipping?.id === opt.id} onChange={() => setSelectedShipping(opt)} />
                             <div>
                               <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{opt.courier} - {opt.service}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Estimasi arrival: {opt.etd}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Estimasi: {opt.etd}</div>
                             </div>
                           </div>
                           <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>Rp{opt.price.toLocaleString('id-ID')}</span>
@@ -423,7 +410,7 @@ export default function Home() {
                     <span>Rp{subtotal.toLocaleString('id-ID')}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '12px' }}>
-                    <span>Biaya Pengiriman (Tangsel ➔ Tujuan)</span>
+                    <span>Biaya Pengiriman</span>
                     <span>{selectedShipping ? `Rp${shippingCost.toLocaleString('id-ID')}` : 'Rp0'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', fontSize: '1.05rem', borderTop: '1px solid #f3f4f6', paddingTop: '12px' }}>
@@ -483,7 +470,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL WILAYAH INDONESIA */}
+      {/* MODAL ALAMAT PENERIMA */}
       {showAddressModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
@@ -505,27 +492,27 @@ export default function Home() {
 
               <textarea placeholder="Alamat Detail (Jalan, Nomor Rumah, RT/RW, Patokan)" required rows={2} value={addrDetail} onChange={(e) => setAddrDetail(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
 
-              {/* 1. PROVINSI */}
-              <select required onChange={handleProvChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">{loadingProvinces ? 'Memuat data provinsi...' : '-- Pilih Provinsi --'}</option>
-                {provinces.map((prov) => (
-                  <option key={prov.id} value={prov.id}>{prov.name}</option>
+              {/* 1. SELECT PROVINSI */}
+              <select required value={selectedProv} onChange={handleProvChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                <option value="">-- Pilih Provinsi --</option>
+                {Object.keys(WILAYAH_DATA).map((prov) => (
+                  <option key={prov} value={prov}>{prov}</option>
                 ))}
               </select>
 
-              {/* 2. KOTA / KABUPATEN */}
-              <select required disabled={!selectedProvObj || loadingCities} onChange={handleCityChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">{loadingCities ? 'Memuat data kota...' : '-- Pilih Kota / Kabupaten --'}</option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>{city.name}</option>
+              {/* 2. SELECT KOTA / KABUPATEN */}
+              <select required disabled={!selectedProv} value={selectedCity} onChange={handleCityChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                <option value="">-- Pilih Kota / Kabupaten --</option>
+                {selectedProv && Object.keys(WILAYAH_DATA[selectedProv]).map((city) => (
+                  <option key={city} value={city}>{city}</option>
                 ))}
               </select>
 
-              {/* 3. KECAMATAN */}
-              <select required disabled={!selectedCityObj || loadingDistricts} onChange={handleDistrictChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                <option value="">{loadingDistricts ? 'Memuat data kecamatan...' : '-- Pilih Kecamatan --'}</option>
-                {districts.map((dist) => (
-                  <option key={dist.id} value={dist.id}>{dist.name}</option>
+              {/* 3. SELECT KECAMATAN */}
+              <select required disabled={!selectedCity} value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                <option value="">-- Pilih Kecamatan --</option>
+                {selectedProv && selectedCity && WILAYAH_DATA[selectedProv][selectedCity].map((dist) => (
+                  <option key={dist} value={dist}>{dist}</option>
                 ))}
               </select>
 
@@ -536,6 +523,7 @@ export default function Home() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
