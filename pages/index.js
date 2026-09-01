@@ -123,7 +123,7 @@ export default function Home() {
     }
   }
 
-  // 5. AUTO FETCH KODE POS AKURAT SELURUH INDONESIA
+  // 5. AUTO FETCH KODE POS SELURUH INDONESIA
   const handleSubDistrictChange = (e) => {
     const subId = e.target.value
     const subObj = subDistricts.find(s => s.id === subId)
@@ -133,29 +133,32 @@ export default function Home() {
       setLoadingZip(true)
       setPostalCode('')
 
-      const query = subObj.name.toLowerCase()
+      const searchQuery = `${subObj.name} ${selectedDistrict.name}`
 
-      fetch(`https://kodepos.now.sh/search?q=${encodeURIComponent(query)}`)
+      fetch(`https://carikodepos.id/api/postal-codes?search=${encodeURIComponent(searchQuery)}&limit=5`)
         .then(res => res.json())
         .then(resData => {
-          if (resData && resData.data && resData.data.length > 0) {
-            const currentDist = selectedDistrict.name.toLowerCase()
-            const matched = resData.data.find(item => 
-              item.subdistrict?.toLowerCase().includes(currentDist) ||
-              item.urban?.toLowerCase().includes(query)
-            )
+          if (resData && resData.success && resData.data?.postalCodes?.length > 0) {
+            const list = resData.data.postalCodes
+            const matched = list.find(item => 
+              item.village?.name?.toLowerCase() === subObj.name.toLowerCase()
+            ) || list[0]
 
-            if (matched && matched.postalcode) {
-              setPostalCode(matched.postalcode.toString())
-            } else {
-              setPostalCode(resData.data[0].postalcode.toString())
+            if (matched && matched.code) {
+              setPostalCode(matched.code.toString())
             }
           } else {
-            setPostalCode('')
+            return fetch(`https://kodepos.laravel-api.id/api/kodepos?search=${encodeURIComponent(subObj.name)}`)
+              .then(r => r.json())
+              .then(bData => {
+                if (bData?.data?.[0]?.kodepos) {
+                  setPostalCode(bData.data[0].kodepos.toString())
+                }
+              })
           }
         })
         .catch(err => {
-          console.error('Error fetching postal code:', err)
+          console.error('Error kode pos:', err)
           setPostalCode('')
         })
         .finally(() => setLoadingZip(false))
