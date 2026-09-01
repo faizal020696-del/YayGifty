@@ -124,7 +124,7 @@ export default function Home() {
     }
   }
 
-  // 5. FETCH KODE POS AKURAT BERDASARKAN KELURAHAN & KECAMATAN
+  // 5. FETCH KODE POS AKURAT DENGAN DOUBLE FALLBACK
   const handleSubDistrictChange = (e) => {
     const subId = e.target.value
     const subObj = subDistricts.find(s => s.id === subId)
@@ -134,23 +134,40 @@ export default function Home() {
       setLoadingZip(true)
       setPostalCode('')
 
-      // Query pencarian gabungan Kelurahan + Kecamatan agar lebih akurat
-      const query = `${subObj.name} ${selectedDistrict.name}`
-
-      fetch(`https://kodepos.getmyapi.com/api/search?q=${encodeURIComponent(query)}`)
+      // Coba API Pertama
+      fetch(`https://api-kodepos.vercel.app/search/?q=${encodeURIComponent(subObj.name)}`)
         .then(res => res.json())
         .then(result => {
           if (result && result.data && result.data.length > 0) {
-            // Cari hasil yang persis sama kelurahannya
             const match = result.data.find(
-              item => item.village.toLowerCase() === subObj.name.toLowerCase()
+              item => 
+                item.urban.toLowerCase().includes(subObj.name.toLowerCase()) ||
+                item.subdistrict.toLowerCase().includes(selectedDistrict.name.toLowerCase())
             )
-            setPostalCode(match ? match.postal_code : result.data[0].postal_code)
+            setPostalCode(match ? match.postalcode : result.data[0].postalcode)
           } else {
-            setPostalCode('')
+            // Backup API Kedua jika API 1 tidak ada data
+            fetch(`https://kodepos.now.sh/search?q=${encodeURIComponent(subObj.name)}`)
+              .then(r => r.json())
+              .then(resAlt => {
+                if (resAlt && resAlt.data && resAlt.data.length > 0) {
+                  setPostalCode(resAlt.data[0].postalcode)
+                }
+              })
+              .catch(() => {})
           }
         })
-        .catch(() => setPostalCode(''))
+        .catch(() => {
+          // Backup API Kedua jika API 1 Error/Cors
+          fetch(`https://kodepos.now.sh/search?q=${encodeURIComponent(subObj.name)}`)
+            .then(r => r.json())
+            .then(resAlt => {
+              if (resAlt && resAlt.data && resAlt.data.length > 0) {
+                setPostalCode(resAlt.data[0].postalcode)
+              }
+            })
+            .catch(() => {})
+        })
         .finally(() => setLoadingZip(false))
     } else {
       setSelectedSubDistrict({ id: '', name: '' })
@@ -569,7 +586,7 @@ export default function Home() {
                 ))}
               </select>
 
-              {/* INPUT KODE POS AUTO GENERATED + BISA EDIT MANUAL */}
+              {/* KODE POS AUTOMATIC + BISA EDIT MANUAL */}
               <input
                 type="text"
                 placeholder={loadingZip ? "Mencari Kode Pos..." : "Kode Pos (Auto/Manual)"}
