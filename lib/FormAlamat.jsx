@@ -1,165 +1,146 @@
 import React, { useState, useEffect } from 'react';
 
-export default function FormAlamat() {
-  // State Data Dropdown dari API
+export default function FormAlamat({ onSave, onClose }) {
   const [provinces, setProvinces] = useState([]);
   const [regencies, setRegencies] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [villages, setVillages] = useState([]);
 
-  // State Pilihan User (ID & Nama)
-  const [selectedProvince, setSelectedProvince] = useState('');
-  const [selectedRegency, setSelectedRegency] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [selectedVillage, setSelectedVillage] = useState('');
+  const [namaPenerima, setNamaPenerima] = useState('');
+  const [noHp, setNoHp] = useState('');
+  const [detailAlamat, setDetailAlamat] = useState('');
 
-  // State Loading Indicator
-  const [loading, setLoading] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [selectedRegency, setSelectedRegency] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedVillage, setSelectedVillage] = useState(null);
 
-  // 1. Fetch Provinsi saat komponen pertama kali dibuka
   useEffect(() => {
     fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
       .then((res) => res.json())
-      .then((data) => setProvinces(data))
-      .catch((err) => console.error('Gagal ambil data provinsi:', err));
+      .then((data) => setProvinces(data));
   }, []);
 
-  // 2. Fetch Kota/Kabupaten ketika Provinsi dipilih
   const handleProvinceChange = (e) => {
-    const provinceId = e.target.value;
-    setSelectedProvince(provinceId);
-    
-    // Reset pilihan di bawahnya
-    setSelectedRegency('');
-    setSelectedDistrict('');
-    setSelectedVillage('');
-    setRegencies([]);
-    setDistricts([]);
-    setVillages([]);
+    const provId = e.target.value;
+    const provObj = provinces.find(p => p.id === provId);
+    setSelectedProvince(provObj || null);
+    setSelectedRegency(null); setSelectedDistrict(null); setSelectedVillage(null);
+    setRegencies([]); setDistricts([]); setVillages([]);
 
-    if (provinceId) {
-      setLoading(true);
-      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
+    if (provId) {
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provId}.json`)
         .then((res) => res.json())
-        .then((data) => setRegencies(data))
-        .finally(() => setLoading(false));
+        .then((data) => setRegencies(data));
     }
   };
 
-  // 3. Fetch Kecamatan ketika Kota/Kabupaten dipilih
   const handleRegencyChange = (e) => {
-    const regencyId = e.target.value;
-    setSelectedRegency(regencyId);
+    const regId = e.target.value;
+    const regObj = regencies.find(r => r.id === regId);
+    setSelectedRegency(regObj || null);
+    setSelectedDistrict(null); setSelectedVillage(null);
+    setDistricts([]); setVillages([]);
 
-    // Reset pilihan di bawahnya
-    setSelectedDistrict('');
-    setSelectedVillage('');
-    setDistricts([]);
-    setVillages([]);
-
-    if (regencyId) {
-      setLoading(true);
-      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regencyId}.json`)
+    if (regId) {
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regId}.json`)
         .then((res) => res.json())
-        .then((data) => setDistricts(data))
-        .finally(() => setLoading(false));
+        .then((data) => setDistricts(data));
     }
   };
 
-  // 4. Fetch Kelurahan ketika Kecamatan dipilih
   const handleDistrictChange = (e) => {
-    const districtId = e.target.value;
-    setSelectedDistrict(districtId);
-
-    // Reset pilihan di bawahnya
-    setSelectedVillage('');
+    const distId = e.target.value;
+    const distObj = districts.find(d => d.id === distId);
+    setSelectedDistrict(distObj || null);
+    setSelectedVillage(null);
     setVillages([]);
 
-    if (districtId) {
-      setLoading(true);
-      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`)
+    if (distId) {
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${distId}.json`)
         .then((res) => res.json())
-        .then((data) => setVillages(data))
-        .finally(() => setLoading(false));
+        .then((data) => setVillages(data));
     }
+  };
+
+  const handleVillageChange = (e) => {
+    const vilId = e.target.value;
+    const vilObj = villages.find(v => v.id === vilId);
+    setSelectedVillage(vilObj || null);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedVillage) return alert('Lengkapi data wilayah terlebih dahulu!');
+
+    onSave({
+      namaPenerima,
+      noHp,
+      detailAlamat,
+      provinceName: selectedProvince?.name,
+      cityName: selectedRegency?.name,
+      districtName: selectedDistrict?.name,
+      villageName: selectedVillage?.name,
+      districtId: selectedDistrict?.id,
+      postalCode: '15310' // Sampel sementara
+    });
   };
 
   return (
-    <div style={{ maxWidth: '450px', margin: '20px auto', fontFamily: 'sans-serif' }}>
-      <h3>Form Pilih Alamat Indonesia</h3>
+    <form onSubmit={handleSubmit}>
+      <h3 style={{ marginTop: 0 }}>Tambah Alamat Baru</h3>
       
-      {/* --- DROPDOWN PROVINSI --- */}
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold' }}>Provinsi:</label>
-        <select 
-          value={selectedProvince} 
-          onChange={handleProvinceChange}
-          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-        >
+      <div style={{ marginBottom: '10px' }}>
+        <label>Nama Penerima:</label>
+        <input type="text" required value={namaPenerima} onChange={(e) => setNamaPenerima(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+      </div>
+
+      <div style={{ marginBottom: '10px' }}>
+        <label>Nomor HP:</label>
+        <input type="tel" required value={noHp} onChange={(e) => setNoHp(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+      </div>
+
+      <div style={{ marginBottom: '10px' }}>
+        <label>Provinsi:</label>
+        <select value={selectedProvince?.id || ''} onChange={handleProvinceChange} style={{ width: '100%', padding: '8px' }}>
           <option value="">-- Pilih Provinsi --</option>
-          {provinces.map((prov) => (
-            <option key={prov.id} value={prov.id}>
-              {prov.name}
-            </option>
-          ))}
+          {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </div>
 
-      {/* --- DROPDOWN KOTA / KABUPATEN --- */}
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold' }}>Kota / Kabupaten:</label>
-        <select 
-          value={selectedRegency} 
-          onChange={handleRegencyChange}
-          disabled={!selectedProvince}
-          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-        >
-          <option value="">-- Pilih Kota / Kabupaten --</option>
-          {regencies.map((reg) => (
-            <option key={reg.id} value={reg.id}>
-              {reg.name}
-            </option>
-          ))}
+      <div style={{ marginBottom: '10px' }}>
+        <label>Kota / Kabupaten:</label>
+        <select value={selectedRegency?.id || ''} onChange={handleRegencyChange} disabled={!selectedProvince} style={{ width: '100%', padding: '8px' }}>
+          <option value="">-- Pilih Kota --</option>
+          {regencies.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
       </div>
 
-      {/* --- DROPDOWN KECAMATAN --- */}
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold' }}>Kecamatan:</label>
-        <select 
-          value={selectedDistrict} 
-          onChange={handleDistrictChange}
-          disabled={!selectedRegency}
-          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-        >
+      <div style={{ marginBottom: '10px' }}>
+        <label>Kecamatan:</label>
+        <select value={selectedDistrict?.id || ''} onChange={handleDistrictChange} disabled={!selectedRegency} style={{ width: '100%', padding: '8px' }}>
           <option value="">-- Pilih Kecamatan --</option>
-          {districts.map((dist) => (
-            <option key={dist.id} value={dist.id}>
-              {dist.name}
-            </option>
-          ))}
+          {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </div>
 
-      {/* --- DROPDOWN KELURAHAN / DESA --- */}
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold' }}>Kelurahan / Desa:</label>
-        <select 
-          value={selectedVillage} 
-          onChange={(e) => setSelectedVillage(e.target.value)}
-          disabled={!selectedDistrict}
-          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-        >
+      <div style={{ marginBottom: '10px' }}>
+        <label>Kelurahan:</label>
+        <select value={selectedVillage?.id || ''} onChange={handleVillageChange} disabled={!selectedDistrict} style={{ width: '100%', padding: '8px' }}>
           <option value="">-- Pilih Kelurahan --</option>
-          {villages.map((vil) => (
-            <option key={vil.id} value={vil.id}>
-              {vil.name}
-            </option>
-          ))}
+          {villages.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
       </div>
 
-      {loading && <p style={{ color: 'gray', fontStyle: 'italic' }}>Sedang mengambil data...</p>}
-    </div>
+      <div style={{ marginBottom: '15px' }}>
+        <label>Detail Alamat (Jalan, RT/RW, No. Rumah):</label>
+        <textarea required value={detailAlamat} onChange={(e) => setDetailAlamat(e.target.value)} style={{ width: '100%', padding: '8px', height: '60px' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+        <button type="button" onClick={onClose} style={{ padding: '8px 16px', background: '#ccc', border: 'none', borderRadius: '4px' }}>Batal</button>
+        <button type="submit" style={{ padding: '8px 16px', background: '#0070f3', color: '#fff', border: 'none', borderRadius: '4px' }}>Simpan Alamat</button>
+      </div>
+    </form>
   );
 }
