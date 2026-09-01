@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-// Produk YayGifty dengan gambarUnsplash berkualitas tinggi
+// Produk YayGifty
 const PRODUCTS = [
   { 
     id: 1, 
@@ -106,16 +106,9 @@ export default function Home() {
 
       if (dbError) throw dbError
 
-      alert('Pesanan berhasil tersimpan! Lo bakal di-redirect ke WhatsApp Admin.')
+      alert('Pesanan berhasil terkirim! Terima kasih sudah berbelanja di YayGifty.')
 
-      // Redirect otomatis ke WhatsApp Admin
-      const adminWA = '6281996106412' // GANTI DENGAN NOMOR WA LO (pake format 62)
-      const waMessage = `Halo Admin YayGifty, saya sudah bayar via ${paymentMethod}!\n\n` +
-        `*Detail Pesanan:*\n- Nama: ${name}\n- WA: ${phone}\n- Pesanan: ${itemSummary}\n- Total: Rp ${totalPrice.toLocaleString('id-ID')}\n- Catatan: ${note || '-'}\n\n` +
-        `Bukti Transfer: ${proofUrl}`
-
-      window.open(`https://wa.me/${adminWA}?text=${encodeURIComponent(waMessage)}`, '_blank')
-
+      // Reset Form
       setCart([])
       setName('')
       setPhone('')
@@ -243,7 +236,7 @@ export default function Home() {
           </div>
 
           <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', marginTop: '8px' }}>
-            {loading ? 'Sedang Memproses & Mengirim...' : '✅ Kirim Bukti Pembayaran & Notif WA'}
+            {loading ? 'Sedang Memproses...' : '✅ Kirim Bukti Pembayaran'}
           </button>
         </form>
       </section>
