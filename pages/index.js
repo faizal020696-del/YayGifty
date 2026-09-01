@@ -35,7 +35,7 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  // Tambah item ke keranjang (TANPA OTOMATIS BUKA POP-UP)
+  // Tambah item ke keranjang (Tanpa buka pop-up otomatis)
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.id === product.id)
@@ -46,7 +46,6 @@ export default function Home() {
       }
       return [...prevCart, { ...product, qty: 1 }]
     })
-    // setIsCartOpen(true) <-- Baris ini udah kita matikan bro!
   }
 
   const updateQty = (id, delta) => {
@@ -218,7 +217,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* PANEL SLIDE KERANJANG (HANYA TERBUKA SAAT IKON DIKLIK) */}
+      {/* PANEL SLIDE KERANJANG */}
       {isCartOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ width: '100%', maxWidth: '450px', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 15px rgba(0,0,0,0.1)' }}>
@@ -237,17 +236,29 @@ export default function Home() {
                   <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Keranjang kamu kosong.</p>
                 ) : (
                   cart.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{item.name}</div>
-                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Rp {item.price.toLocaleString('id-ID')}</div>
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6', gap: '12px' }}>
+                      
+                      {/* GAMBAR MINI PRODUK (THUMBNAIL) */}
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb' }} 
+                      />
+
+                      {/* INFORMASI PRODUK */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#1f2937' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '2px' }}>Rp {item.price.toLocaleString('id-ID')}</div>
                       </div>
+
+                      {/* TOMBOL QTY & HAPUS */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button onClick={() => updateQty(item.id, -1)} style={{ width: '24px', height: '24px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', cursor: 'pointer' }}>-</button>
-                        <span>{item.qty}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{item.qty}</span>
                         <button onClick={() => updateQty(item.id, 1)} style={{ width: '24px', height: '24px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', cursor: 'pointer' }}>+</button>
-                        <button onClick={() => removeFromCart(item.id)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', marginLeft: '6px' }}>✕</button>
+                        <button onClick={() => removeFromCart(item.id)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', marginLeft: '4px', fontSize: '0.9rem' }}>✕</button>
                       </div>
+
                     </div>
                   ))
                 )}
