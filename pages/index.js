@@ -33,9 +33,10 @@ export default function Home() {
   const [selectedProv, setSelectedProv] = useState({ id: '', name: '' })
   const [selectedCity, setSelectedCity] = useState({ id: '', name: '' })
   const [selectedDistrict, setSelectedDistrict] = useState({ id: '', name: '' })
-  const [selectedSubDistrict, setSelectedSubDistrict] = useState({ id: '', name: '', zip: '' })
+  const [selectedSubDistrict, setSelectedSubDistrict] = useState({ id: '', name: '' })
 
   const [loadingArea, setLoadingArea] = useState(false)
+  const [loadingZip, setLoadingZip] = useState(false)
 
   // STATE EKSPEDISI & PEMBAYARAN
   const [shippingOptions, setShippingOptions] = useState([])
@@ -65,7 +66,7 @@ export default function Home() {
     setSubDistricts([])
     setSelectedCity({ id: '', name: '' })
     setSelectedDistrict({ id: '', name: '' })
-    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setSelectedSubDistrict({ id: '', name: '' })
     setPostalCode('')
 
     if (provId) {
@@ -88,7 +89,7 @@ export default function Home() {
     setDistricts([])
     setSubDistricts([])
     setSelectedDistrict({ id: '', name: '' })
-    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setSelectedSubDistrict({ id: '', name: '' })
     setPostalCode('')
 
     if (cityId) {
@@ -109,7 +110,7 @@ export default function Home() {
     setSelectedDistrict({ id: distId, name: distObj ? distObj.name : '' })
 
     setSubDistricts([])
-    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setSelectedSubDistrict({ id: '', name: '' })
     setPostalCode('')
 
     if (distId) {
@@ -123,26 +124,34 @@ export default function Home() {
     }
   }
 
-  // 5. SET KELURAHAN & GENERATE KODE POS
+  // 5. FETCH KODE POS AKURAT BERDASARKAN KELURAHAN & KECAMATAN
   const handleSubDistrictChange = (e) => {
     const subId = e.target.value
     const subObj = subDistricts.find(s => s.id === subId)
 
     if (subObj) {
       setSelectedSubDistrict({ id: subId, name: subObj.name })
+      setLoadingZip(true)
+      setPostalCode('')
 
-      // Fetch kode pos berdasarkan nama kelurahan/kecamatan via API Kode Pos Binderbyte/Emsifa
-      fetch(`https://kodepos.getmyapi.com/api/search?q=${encodeURIComponent(subObj.name)}`)
+      // Query pencarian gabungan Kelurahan + Kecamatan agar lebih akurat
+      const query = `${subObj.name} ${selectedDistrict.name}`
+
+      fetch(`https://kodepos.getmyapi.com/api/search?q=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(result => {
           if (result && result.data && result.data.length > 0) {
-            setPostalCode(result.data[0].postal_code)
+            // Cari hasil yang persis sama kelurahannya
+            const match = result.data.find(
+              item => item.village.toLowerCase() === subObj.name.toLowerCase()
+            )
+            setPostalCode(match ? match.postal_code : result.data[0].postal_code)
           } else {
-            // Fallback contoh kode pos jika API pencarian spesifik tidak ditemukan
-            setPostalCode('15411') 
+            setPostalCode('')
           }
         })
-        .catch(() => setPostalCode('15411'))
+        .catch(() => setPostalCode(''))
+        .finally(() => setLoadingZip(false))
     } else {
       setSelectedSubDistrict({ id: '', name: '' })
       setPostalCode('')
@@ -166,7 +175,7 @@ export default function Home() {
       city: selectedCity.name,
       district: selectedDistrict.name,
       subDistrict: selectedSubDistrict.name,
-      postalCode: postalCode || '15411',
+      postalCode: postalCode || '-',
     }
 
     setSavedAddress(addressData)
@@ -560,13 +569,19 @@ export default function Home() {
                 ))}
               </select>
 
-              {/* AUTO GENERATED KODE POS */}
+              {/* INPUT KODE POS AUTO GENERATED + BISA EDIT MANUAL */}
               <input
                 type="text"
-                placeholder="Kode Pos (Otomatis)"
+                placeholder={loadingZip ? "Mencari Kode Pos..." : "Kode Pos (Auto/Manual)"}
                 value={postalCode}
-                readOnly
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', background: '#f3f4f6', cursor: 'not-allowed', fontWeight: 'bold' }}
+                onChange={(e) => setPostalCode(e.target.value)}
+                style={{ 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #ccc', 
+                  background: loadingZip ? '#f3f4f6' : '#fff', 
+                  fontWeight: 'bold' 
+                }}
               />
 
               <button type="submit" style={{ padding: '12px', background: '#008b9b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
