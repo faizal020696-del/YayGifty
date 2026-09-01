@@ -7,7 +7,7 @@ const PRODUCTS = [
   { id: 3, name: 'Custom Dried Flower Bouquet', originalPrice: 100000, discountPercent: 50, price: 50000, image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60' },
 ]
 
-// DATA WILAYAH OFFLINE (DIJAMIN TIDAK AKAN EROR BROWSER / CORS)
+// DATA WILAYAH OFFLINE (ANTI-GAGAL / NO CORS)
 const WILAYAH_DATA = {
   "DKI Jakarta": {
     "Jakarta Selatan": ["Cilandak", "Jagakarsa", "Kebayoran Baru", "Kebayoran Lama", "Mampang Prapatan", "Pancasari", "Pasar Minggu", "Pesanggrahan", "Setiabudi", "Tebet"],
@@ -69,6 +69,7 @@ export default function Home() {
   const [addrEmail, setAddrEmail] = useState('')
   const [addrLabel, setAddrLabel] = useState('Rumah')
   const [addrDetail, setAddrDetail] = useState('')
+  const [postalCode, setPostalCode] = useState('')
 
   const [selectedProv, setSelectedProv] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
@@ -109,6 +110,7 @@ export default function Home() {
       province: selectedProv,
       city: selectedCity,
       district: selectedDistrict,
+      postalCode: postalCode,
     }
 
     setSavedAddress(addressData)
@@ -207,7 +209,7 @@ export default function Home() {
       const proofUrl = publicUrlData.publicUrl
 
       const itemSummary = cart.map((i) => `${i.name} (x${i.qty})`).join(', ')
-      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} | Ekspedisi: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
+      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} ${savedAddress.postalCode ? `(${savedAddress.postalCode})` : ''} | Ekspedisi: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
 
       const { error: dbError } = await supabase.from('orders').insert([
         {
@@ -351,7 +353,7 @@ export default function Home() {
                     <div style={{ fontSize: '0.85rem', color: '#374151' }}>
                       <div style={{ fontWeight: '700' }}>[{savedAddress.label}] {savedAddress.name} ({savedAddress.phone})</div>
                       <div>{savedAddress.detail}</div>
-                      <div>Kec. {savedAddress.district}, {savedAddress.city}, {savedAddress.province}</div>
+                      <div>Kec. {savedAddress.district}, {savedAddress.city}, {savedAddress.province} {savedAddress.postalCode ? `(${savedAddress.postalCode})` : ''}</div>
                       <button onClick={() => setShowAddressModal(true)} style={{ marginTop: '8px', color: '#008b9b', background: 'none', border: 'none', fontWeight: '700', padding: 0, cursor: 'pointer' }}>Ganti Alamat</button>
                     </div>
                   ) : (
@@ -515,6 +517,9 @@ export default function Home() {
                   <option key={dist} value={dist}>{dist}</option>
                 ))}
               </select>
+
+              {/* 4. INPUT KODE POS */}
+              <input type="text" placeholder="Kode Pos (Contoh: 15412)" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
 
               <button type="submit" style={{ padding: '12px', background: '#008b9b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
                 Simpan & Hitung Ongkir
