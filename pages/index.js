@@ -35,6 +35,7 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  // Tambah item ke keranjang (TANPA OTOMATIS BUKA POP-UP)
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.id === product.id)
@@ -45,7 +46,7 @@ export default function Home() {
       }
       return [...prevCart, { ...product, qty: 1 }]
     })
-    setIsCartOpen(true) // Otomatis buka keranjang pas nambah barang
+    // setIsCartOpen(true) <-- Baris ini udah kita matikan bro!
   }
 
   const updateQty = (id, delta) => {
@@ -69,7 +70,6 @@ export default function Home() {
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0)
 
-  // Filter produk berdasarkan input pencarian
   const filteredProducts = PRODUCTS.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   )
@@ -134,10 +134,10 @@ export default function Home() {
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
           
-          {/* LOGO DAGANGAN */}
+          {/* LOGO */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <span style={{ fontSize: '1.8rem' }}>🎁</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#4f46e5', tracking: '-0.05em' }}>YayGifty</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#4f46e5', letterSpacing: '-0.05em' }}>YayGifty</span>
           </div>
 
           {/* SEARCH BAR */}
@@ -218,7 +218,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* PANEL SLIDE KERANJANG & CHECKOUT (KANAN ATAS) */}
+      {/* PANEL SLIDE KERANJANG (HANYA TERBUKA SAAT IKON DIKLIK) */}
       {isCartOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ width: '100%', maxWidth: '450px', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 15px rgba(0,0,0,0.1)' }}>
@@ -229,10 +229,8 @@ export default function Home() {
               <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
-            {/* ISI BODY PANEL */}
+            {/* BODY PANEL */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-              
-              {/* LIST ITEM */}
               <div style={{ marginBottom: '24px' }}>
                 <h4 style={{ margin: '0 0 12px' }}>Item Pesanan:</h4>
                 {cart.length === 0 ? (
@@ -260,7 +258,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* FORM CHECKOUT (CUMA MUNCIUL KALAU ADA ISINYA) */}
               {cart.length > 0 && (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '2px dashed #e5e7eb', paddingTop: '16px' }}>
                   <h4 style={{ margin: 0 }}>Detail Pembayaran & Pengiriman</h4>
