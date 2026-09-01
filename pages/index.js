@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-// Produk YayGifty
 const PRODUCTS = [
   { 
     id: 1, 
@@ -25,6 +24,9 @@ const PRODUCTS = [
 
 export default function Home() {
   const [cart, setCart] = useState([])
+  const [search, setSearch] = useState('')
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -33,7 +35,6 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  // Tambah item ke keranjang
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.id === product.id)
@@ -44,9 +45,9 @@ export default function Home() {
       }
       return [...prevCart, { ...product, qty: 1 }]
     })
+    setIsCartOpen(true) // Otomatis buka keranjang pas nambah barang
   }
 
-  // Kelola jumlah quantity (tambah/kurang)
   const updateQty = (id, delta) => {
     setCart((prevCart) =>
       prevCart
@@ -61,13 +62,17 @@ export default function Home() {
     )
   }
 
-  // Hapus item dari keranjang
   const removeFromCart = (id) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id))
   }
 
-  // Hitung Total Bayar
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+  const totalItems = cart.reduce((sum, item) => sum + item.qty, 0)
+
+  // Filter produk berdasarkan input pencarian
+  const filteredProducts = PRODUCTS.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -108,13 +113,13 @@ export default function Home() {
 
       alert('Pesanan berhasil terkirim! Terima kasih sudah berbelanja di YayGifty.')
 
-      // Reset Form
       setCart([])
       setName('')
       setPhone('')
       setAddress('')
       setNote('')
       setFile(null)
+      setIsCartOpen(false)
     } catch (error) {
       alert('Gagal mengirim pesanan: ' + error.message)
     } finally {
@@ -123,123 +128,171 @@ export default function Home() {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px', fontFamily: 'system-ui, sans-serif', color: '#1f2937' }}>
+    <div style={{ fontFamily: 'system-ui, sans-serif', color: '#1f2937', minHeight: '100vh', background: '#f9fafb' }}>
       
-      {/* HEADER */}
-      <header style={{ textAlign: 'center', marginBottom: '40px', paddingBottom: '20px', borderBottom: '2px solid #f3f4f6' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#4f46e5', margin: 0 }}>🎁 YayGifty</h1>
-        <p style={{ color: '#4b5563', marginTop: '8px' }}>Pilihan Hampers & Hadiah Spesial untuk Orang Tersayang</p>
-      </header>
-      
-      {/* KATALOG PRODUK */}
-      <section style={{ marginBottom: '48px' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '20px' }}>Katalog Produk</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
-          {PRODUCTS.map((product) => (
-            <div key={product.id} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', background: '#fff' }}>
-              <img src={product.image} alt={product.name} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-              <div style={{ padding: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 8px' }}>{product.name}</h3>
-                <p style={{ fontWeight: '700', fontSize: '1.2rem', color: '#4f46e5', margin: '0 0 16px' }}>
-                  Rp {product.price.toLocaleString('id-ID')}
-                </p>
-                <button 
-                  onClick={() => addToCart(product)}
-                  style={{ width: '100%', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  + Tambah ke Keranjang
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FORM CHECKOUT & KERANJANG */}
-      <section style={{ border: '1px solid #e5e7eb', borderRadius: '16px', padding: '28px', background: '#f9fafb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: 0, marginBottom: '20px' }}>🛒 Checkout & Ringkasan</h2>
-        
-        {/* DETAIL KERANJANG */}
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-          <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem' }}>Produk Dipilih ({cart.reduce((a, b) => a + b.qty, 0)} item):</h4>
+      {/* HEADER STICKY */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
           
-          {cart.length === 0 ? (
-            <p style={{ color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>Keranjang belanjaan kamu masih kosong nih.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {cart.map((item) => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px dashed #e5e7eb' }}>
-                  <div>
-                    <div style={{ fontWeight: '600' }}>{item.name}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>Rp {item.price.toLocaleString('id-ID')}</div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button onClick={() => updateQty(item.id, -1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>-</button>
-                    <span style={{ fontWeight: '600', minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
-                    <button onClick={() => updateQty(item.id, 1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>+</button>
-                    <button onClick={() => removeFromCart(item.id)} style={{ marginLeft: '8px', color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '2px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '1.2rem', fontWeight: '700' }}>Total Bayar:</span>
-            <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#4f46e5' }}>Rp {totalPrice.toLocaleString('id-ID')}</span>
+          {/* LOGO DAGANGAN */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <span style={{ fontSize: '1.8rem' }}>🎁</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#4f46e5', tracking: '-0.05em' }}>YayGifty</span>
           </div>
-        </div>
 
-        {/* METODE PEMBAYARAN */}
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
-          <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px' }}>Pilih Bank / Metode Transfer:</label>
-          <select 
-            value={paymentMethod} 
-            onChange={(e) => setPaymentMethod(e.target.value)} 
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #93c5fd', background: '#fff', fontWeight: '600', marginBottom: '12px' }}
+          {/* SEARCH BAR */}
+          <div style={{ flex: 1, maxWidth: '600px', position: 'relative' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Cari hampers atau kado spesial di YayGifty..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px 10px 40px',
+                borderRadius: '9999px',
+                border: '1px solid #e5e7eb',
+                background: '#f3f4f6',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* IKON KERANJANG DI KANAN ATAS */}
+          <button
+            onClick={() => setIsCartOpen(true)}
+            style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}
           >
-            <option value="BCA">Bank BCA (123-456-7890 a.n YayGifty)</option>
-            <option value="Mandiri">Bank Mandiri (987-000-1111 a.n YayGifty)</option>
-            <option value="QRIS / E-Wallet">QRIS / GoPay / OVO (0812-3456-7890)</option>
-          </select>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e40af' }}>
-            Silakan transfer tepat sesuai total nominal di atas ke pilihan rekening di atas.
-          </p>
-        </div>
-
-        {/* FORM ISIAN DATA */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ fontWeight: '600', display: 'block', marginBottom: '4px' }}>Nama Lengkap Pembeli</label>
-            <input type="text" required placeholder="Contoh: Budi Santoso" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
-          </div>
-
-          <div>
-            <label style={{ fontWeight: '600', display: 'block', marginBottom: '4px' }}>Nomor WhatsApp Active</label>
-            <input type="tel" required placeholder="Contoh: 081234567890" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
-          </div>
-
-          <div>
-            <label style={{ fontWeight: '600', display: 'block', marginBottom: '4px' }}>Alamat Pengiriman Lengkap</label>
-            <textarea required rows={3} placeholder="Jalan, No. Rumah, Kecamatan, Kota, Kode Pos" value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
-          </div>
-
-          <div>
-            <label style={{ fontWeight: '600', display: 'block', marginBottom: '4px' }}>Catatan Ucapan / Request Pita (Opsional)</label>
-            <input type="text" placeholder="Contoh: Tolong tuliskan 'Happy Birthday Rina!'" value={note} onChange={(e) => setNote(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
-          </div>
-
-          <div>
-            <label style={{ fontWeight: '600', display: 'block', marginBottom: '4px' }}>Upload Bukti Pembayaran</label>
-            <input type="file" accept="image/*" required onChange={(e) => setFile(e.target.files[0])} style={{ padding: '8px 0' }} />
-          </div>
-
-          <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', marginTop: '8px' }}>
-            {loading ? 'Sedang Memproses...' : '✅ Kirim Bukti Pembayaran'}
+            <span style={{ fontSize: '1.6rem' }}>🛒</span>
+            {totalItems > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '0px',
+                right: '0px',
+                background: '#ef4444',
+                color: '#fff',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                borderRadius: '9999px',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {totalItems}
+              </span>
+            )}
           </button>
-        </form>
-      </section>
+        </div>
+      </header>
+
+      {/* KATALOG PRODUK */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '24px' }}>Katalog Produk</h2>
+        
+        {filteredProducts.length === 0 ? (
+          <p style={{ color: '#6b7280' }}>Produk "{search}" tidak ditemukan.</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
+            {filteredProducts.map((product) => (
+              <div key={product.id} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <img src={product.image} alt={product.name} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+                <div style={{ padding: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 8px' }}>{product.name}</h3>
+                  <p style={{ fontWeight: '700', fontSize: '1.2rem', color: '#4f46e5', margin: '0 0 16px' }}>
+                    Rp {product.price.toLocaleString('id-ID')}
+                  </p>
+                  <button 
+                    onClick={() => addToCart(product)}
+                    style={{ width: '100%', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                  >
+                    + Tambah ke Keranjang
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* PANEL SLIDE KERANJANG & CHECKOUT (KANAN ATAS) */}
+      {isCartOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.5)' }}>
+          <div style={{ width: '100%', maxWidth: '450px', background: '#fff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 15px rgba(0,0,0,0.1)' }}>
+            
+            {/* HEADER PANEL */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>🛒 Keranjang & Pembayaran</h3>
+              <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            {/* ISI BODY PANEL */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              
+              {/* LIST ITEM */}
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ margin: '0 0 12px' }}>Item Pesanan:</h4>
+                {cart.length === 0 ? (
+                  <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>Keranjang kamu kosong.</p>
+                ) : (
+                  cart.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Rp {item.price.toLocaleString('id-ID')}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button onClick={() => updateQty(item.id, -1)} style={{ width: '24px', height: '24px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', cursor: 'pointer' }}>-</button>
+                        <span>{item.qty}</span>
+                        <button onClick={() => updateQty(item.id, 1)} style={{ width: '24px', height: '24px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', cursor: 'pointer' }}>+</button>
+                        <button onClick={() => removeFromCart(item.id)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', marginLeft: '6px' }}>✕</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                  <span>Total Bayar:</span>
+                  <span style={{ color: '#4f46e5' }}>Rp {totalPrice.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              {/* FORM CHECKOUT (CUMA MUNCIUL KALAU ADA ISINYA) */}
+              {cart.length > 0 && (
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '2px dashed #e5e7eb', paddingTop: '16px' }}>
+                  <h4 style={{ margin: 0 }}>Detail Pembayaran & Pengiriman</h4>
+                  
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Metode Transfer</label>
+                    <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}>
+                      <option value="BCA">BCA (123-456-7890 a.n YayGifty)</option>
+                      <option value="Mandiri">Mandiri (987-000-1111 a.n YayGifty)</option>
+                      <option value="QRIS">QRIS / E-Wallet (0812-3456-7890)</option>
+                    </select>
+                  </div>
+
+                  <input type="text" required placeholder="Nama Lengkap" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                  <input type="tel" required placeholder="Nomor WhatsApp" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                  <textarea required rows={2} placeholder="Alamat Pengiriman Lengkap" value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                  <input type="text" placeholder="Catatan Ucapan (Opsional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+                  
+                  <div>
+                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Upload Bukti Pembayaran</label>
+                    <input type="file" accept="image/*" required onChange={(e) => setFile(e.target.files[0])} style={{ marginTop: '4px', display: 'block' }} />
+                  </div>
+
+                  <button type="submit" disabled={loading} style={{ width: '100%', padding: '12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
+                    {loading ? 'Mengirim...' : 'Bayar Sekarang'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
