@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const PRODUCTS = [
@@ -6,54 +6,6 @@ const PRODUCTS = [
   { id: 2, name: 'Luxury Hampers Box B', price: 120000, image: 'https://images.unsplash.com/photo-1513885535751-8b9238bd48d7?w=500&auto=format&fit=crop&q=60' },
   { id: 3, name: 'Custom Dried Flower Bouquet', originalPrice: 100000, discountPercent: 50, price: 50000, image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60' },
 ]
-
-// DATA WILAYAH OFFLINE (ANTI-GAGAL / NO CORS)
-const WILAYAH_DATA = {
-  "DKI Jakarta": {
-    "Jakarta Selatan": ["Cilandak", "Jagakarsa", "Kebayoran Baru", "Kebayoran Lama", "Mampang Prapatan", "Pancasari", "Pasar Minggu", "Pesanggrahan", "Setiabudi", "Tebet"],
-    "Jakarta Barat": ["Cengkareng", "Grogol Petamburan", "Taman Sari", "Tambora", "Kebon Jeruk", "Kalideres", "Palmerah", "Kembangan"],
-    "Jakarta Pusat": ["Cempaka Putih", "Gambir", "Johar Baru", "Kemayoran", "Menteng", "Sawah Besar", "Senen", "Tanah Abang"],
-    "Jakarta Timur": ["Cakung", "Ciracas", "Duren Sawit", "Jatinegara", "Kramat Jati", "Makasar", "Matraman", "Pasar Rebo", "Pulo Gadung"],
-    "Jakarta Utara": ["Cilincing", "Kelapa Gading", "Koja", "Pademangan", "Penjaringan", "Tanjung Priok"]
-  },
-  "Banten": {
-    "Kota Tangerang Selatan": ["Ciputat", "Ciputat Timur", "Pamulang", "Pondok Aren", "Serpong", "Serpong Utara", "Setu"],
-    "Kota Tangerang": ["Batuceper", "Benda", "Cibodas", "Ciledug", "Karangtengah", "Karawaci", "Larangan", "Neglasari", "Periuk", "Pinang", "Tangerang"],
-    "Kab. Tangerang": ["Balaraja", "Cikupa", "Curug", "Kelapa Dua", "Kosambi", "Pasar Kemis", "Sepatan", "Teluknaga"],
-    "Kota Serang": ["Serang", "Cipocok Jaya", "Curug", "Kasemen", "Taktakan", "Walantaka"],
-    "Kota Cilegon": ["Cibeber", "Cilegon", "Citangkil", "Grogol", "Jombang", "Pulomerak"]
-  },
-  "Jawa Barat": {
-    "Kota Bandung": ["Andir", "Astana Anyar", "Antapani", "Arcamanik", "Bandung Kidul", "Coblong", "Cicendo"],
-    "Kab. Bogor": ["Cibinong", "Ciawi", "Cisarua", "Cileungsi", "Gunung Putri", "Parung"],
-    "Kota Bogor": ["Bogor Barat", "Bogor Selatan", "Bogor Tengah", "Bogor Timur", "Bogor Utara"],
-    "Kota Bekasi": ["Bantargebang", "Bekasi Barat", "Bekasi Selatan", "Bekasi Timur", "Bekasi Utara", "Jatiasih", "Pondok Gede"],
-    "Kota Depok": ["Beji", "Cilodong", "Cimanggis", "Cinere", "Cipayung", "Pancoran Mas", "Sawangan", "Sukmajaya"]
-  },
-  "Jawa Tengah": {
-    "Kota Semarang": ["Banyumanik", "Candisari", "Gajahmungkur", "Gayamsari", "Genuk", "Pedurungan", "Semarang Selatan"],
-    "Kota Surakarta (Solo)": ["Banjarsari", "Jebres", "Laweyan", "Pasar Kliwon", "Serengan"],
-    "Kab. Magelang": ["Borobudur", "Muntilan", "Mertoyudan", "Salaman"]
-  },
-  "DI Yogyakarta": {
-    "Kota Yogyakarta": ["Danurejan", "Gondomanan", "Jetis", "Kotagede", "Kraton", "Mantrijeron", "Merggangsan", "Umbulharjo"],
-    "Kab. Sleman": ["Depok", "Gamping", "Kalasan", "Mlati", "Ngaglik", "Sleman"]
-  },
-  "Jawa Timur": {
-    "Kota Surabaya": ["Gubeng", "Gunung Anyar", "Jambangan", "Karangpilang", "Mulyorejo", "Rungkut", "Tegalsari", "Wonokromo"],
-    "Kota Malang": ["Blimbing", "Kedungkandang", "Klojen", "Lowokwaru", "Sukun"]
-  },
-  "Bali": {
-    "Kota Denpasar": ["Denpasar Barat", "Denpasar Selatan", "Denpasar Timur", "Denpasar Utara"],
-    "Kab. Badung": ["Kuta", "Kuta Selatan", "Kuta Utara", "Mengwi"]
-  },
-  "Sumatera Utara": {
-    "Kota Medan": ["Medan Amplas", "Medan Baru", "Medan Helvetia", "Medan Johor", "Medan Kota", "Medan Petisah", "Medan Tembung"]
-  },
-  "Sulawesi Selatan": {
-    "Kota Makassar": ["Biringkanaya", "Bontoala", "Makassar", "Mamajang", "Mariso", "Panakkukang", "Rappocini", "Tamalate", "Ujung Pandang"]
-  }
-}
 
 export default function Home() {
   const [cart, setCart] = useState([])
@@ -71,9 +23,19 @@ export default function Home() {
   const [addrDetail, setAddrDetail] = useState('')
   const [postalCode, setPostalCode] = useState('')
 
-  const [selectedProv, setSelectedProv] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
-  const [selectedDistrict, setSelectedDistrict] = useState('')
+  // LIST DATA API
+  const [provinces, setProvinces] = useState([])
+  const [cities, setCities] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [subDistricts, setSubDistricts] = useState([])
+
+  // SELECTED ITEM (STORE ID & NAME)
+  const [selectedProv, setSelectedProv] = useState({ id: '', name: '' })
+  const [selectedCity, setSelectedCity] = useState({ id: '', name: '' })
+  const [selectedDistrict, setSelectedDistrict] = useState({ id: '', name: '' })
+  const [selectedSubDistrict, setSelectedSubDistrict] = useState({ id: '', name: '', zip: '' })
+
+  const [loadingArea, setLoadingArea] = useState(false)
 
   // STATE EKSPEDISI & PEMBAYARAN
   const [shippingOptions, setShippingOptions] = useState([])
@@ -83,22 +45,115 @@ export default function Home() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  // 1. FETCH PROVINSI
+  useEffect(() => {
+    fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
+      .then(res => res.json())
+      .then(data => setProvinces(data))
+      .catch(err => console.error('Error fetching provinces:', err))
+  }, [])
+
+  // 2. FETCH KOTA JIKA PROVINSI BERUBAH
   const handleProvChange = (e) => {
-    setSelectedProv(e.target.value)
-    setSelectedCity('')
-    setSelectedDistrict('')
+    const provId = e.target.value
+    const provObj = provinces.find(p => p.id === provId)
+    setSelectedProv({ id: provId, name: provObj ? provObj.name : '' })
+
+    // Reset turunan
+    setCities([])
+    setDistricts([])
+    setSubDistricts([])
+    setSelectedCity({ id: '', name: '' })
+    setSelectedDistrict({ id: '', name: '' })
+    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setPostalCode('')
+
+    if (provId) {
+      setLoadingArea(true)
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provId}.json`)
+        .then(res => res.json())
+        .then(data => {
+          setCities(data)
+          setLoadingArea(false)
+        })
+    }
   }
 
+  // 3. FETCH KECAMATAN JIKA KOTA BERUBAH
   const handleCityChange = (e) => {
-    setSelectedCity(e.target.value)
-    setSelectedDistrict('')
+    const cityId = e.target.value
+    const cityObj = cities.find(c => c.id === cityId)
+    setSelectedCity({ id: cityId, name: cityObj ? cityObj.name : '' })
+
+    setDistricts([])
+    setSubDistricts([])
+    setSelectedDistrict({ id: '', name: '' })
+    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setPostalCode('')
+
+    if (cityId) {
+      setLoadingArea(true)
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`)
+        .then(res => res.json())
+        .then(data => {
+          setDistricts(data)
+          setLoadingArea(false)
+        })
+    }
   }
 
-  // SIMPAN ALAMAT & HITUNG ONGKIR (ORIGIN: TANGERANG SELATAN)
+  // 4. FETCH KELURAHAN JIKA KECAMATAN BERUBAH
+  const handleDistrictChange = (e) => {
+    const distId = e.target.value
+    const distObj = districts.find(d => d.id === distId)
+    setSelectedDistrict({ id: distId, name: distObj ? distObj.name : '' })
+
+    setSubDistricts([])
+    setSelectedSubDistrict({ id: '', name: '', zip: '' })
+    setPostalCode('')
+
+    if (distId) {
+      setLoadingArea(true)
+      fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${distId}.json`)
+        .then(res => res.json())
+        .then(data => {
+          setSubDistricts(data)
+          setLoadingArea(false)
+        })
+    }
+  }
+
+  // 5. SET KELURAHAN & GENERATE KODE POS
+  const handleSubDistrictChange = (e) => {
+    const subId = e.target.value
+    const subObj = subDistricts.find(s => s.id === subId)
+
+    if (subObj) {
+      setSelectedSubDistrict({ id: subId, name: subObj.name })
+
+      // Fetch kode pos berdasarkan nama kelurahan/kecamatan via API Kode Pos Binderbyte/Emsifa
+      fetch(`https://kodepos.getmyapi.com/api/search?q=${encodeURIComponent(subObj.name)}`)
+        .then(res => res.json())
+        .then(result => {
+          if (result && result.data && result.data.length > 0) {
+            setPostalCode(result.data[0].postal_code)
+          } else {
+            // Fallback contoh kode pos jika API pencarian spesifik tidak ditemukan
+            setPostalCode('15411') 
+          }
+        })
+        .catch(() => setPostalCode('15411'))
+    } else {
+      setSelectedSubDistrict({ id: '', name: '' })
+      setPostalCode('')
+    }
+  }
+
+  // SIMPAN ALAMAT & HITUNG ONGKIR
   const handleSaveAddress = (e) => {
     e.preventDefault()
-    if (!selectedProv || !selectedCity || !selectedDistrict) {
-      return alert('Mohon pilih Provinsi, Kota, dan Kecamatan secara lengkap!')
+    if (!selectedProv.name || !selectedCity.name || !selectedDistrict.name || !selectedSubDistrict.name) {
+      return alert('Mohon pilih Wilayah Alamat secara lengkap!')
     }
 
     const addressData = {
@@ -107,21 +162,21 @@ export default function Home() {
       email: addrEmail,
       label: addrLabel,
       detail: addrDetail,
-      province: selectedProv,
-      city: selectedCity,
-      district: selectedDistrict,
-      postalCode: postalCode,
+      province: selectedProv.name,
+      city: selectedCity.name,
+      district: selectedDistrict.name,
+      subDistrict: selectedSubDistrict.name,
+      postalCode: postalCode || '15411',
     }
 
     setSavedAddress(addressData)
     setShowAddressModal(false)
 
-    const cityUpper = selectedCity.toUpperCase()
-    const provUpper = selectedProv.toUpperCase()
+    // PERHITUNGAN ONGKIR DARI TANGERANG SELATAN
+    const cityUpper = selectedCity.name.toUpperCase()
+    const provUpper = selectedProv.name.toUpperCase()
 
     let options = []
-
-    // A. AREA LOKAL (Tangsel & Jabodetabek)
     if (cityUpper.includes('TANGERANG') || cityUpper.includes('JAKARTA') || cityUpper.includes('DEPOK') || cityUpper.includes('BOGOR') || cityUpper.includes('BEKASI')) {
       options = [
         { id: 'gojek-instant', courier: 'Gojek / Grab', service: 'Instant (1-3 jam)', price: cityUpper.includes('TANGERANG SELATAN') ? 15000 : 30000, etd: '3 Jam' },
@@ -129,33 +184,15 @@ export default function Home() {
         { id: 'jne-reg', courier: 'JNE', service: 'REG (Reguler)', price: 10000, etd: '1-2 hari' },
         { id: 'jnt-ez', courier: 'J&T', service: 'EZ (Express)', price: 10000, etd: '1-2 hari' },
       ]
-    } 
-    // B. JAWA BARAT & BANTEN
-    else if (provUpper.includes('JAWA BARAT') || provUpper.includes('BANTEN')) {
+    } else if (provUpper.includes('JAWA BARAT') || provUpper.includes('BANTEN')) {
       options = [
         { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 12000, etd: '2-3 hari' },
         { id: 'sicepat-best', courier: 'SiCepat', service: 'BEST (Next Day)', price: 18000, etd: '1 hari' },
-        { id: 'jnt-cargo', courier: 'J&T Cargo', service: 'Kargo / Heavy Weight', price: 25000, etd: '3-4 hari' },
       ]
-    } 
-    // C. JAWA TENGAH, DIY, JAWA TIMUR
-    else if (provUpper.includes('JAWA TENGAH') || provUpper.includes('YOGYAKARTA') || provUpper.includes('JAWA TIMUR')) {
+    } else {
       options = [
-        { id: 'jne-reg', courier: 'JNE', service: 'REG', price: 18000, etd: '2-3 hari' },
-        { id: 'sicepat-reg', courier: 'SiCepat', service: 'REG', price: 17000, etd: '2-3 hari' },
-        { id: 'jnt-cargo', courier: 'J&T Cargo', service: 'Kargo Hemat', price: 35000, etd: '4-5 hari' },
-      ]
-    } 
-    // D. LUAR JAWA
-    else {
-      let basePrice = 30000
-      if (provUpper.includes('BALI') || provUpper.includes('SUMATERA')) basePrice = 28000
-      if (provUpper.includes('SULAWESI')) basePrice = 38000
-
-      options = [
-        { id: 'jne-reg', courier: 'JNE', service: 'REG (Udara)', price: basePrice, etd: '3-5 hari' },
-        { id: 'sicepat-gokil', courier: 'SiCepat', service: 'GOKIL (Cargo)', price: Math.round(basePrice * 0.8), etd: '5-7 hari' },
-        { id: 'jnt-express', courier: 'J&T Express', service: 'EZ', price: basePrice + 5000, etd: '3-4 hari' },
+        { id: 'jne-reg', courier: 'JNE', service: 'REG (Udara)', price: 30000, etd: '3-5 hari' },
+        { id: 'sicepat-gokil', courier: 'SiCepat', service: 'GOKIL (Cargo)', price: 24000, etd: '5-7 hari' },
       ]
     }
 
@@ -209,7 +246,7 @@ export default function Home() {
       const proofUrl = publicUrlData.publicUrl
 
       const itemSummary = cart.map((i) => `${i.name} (x${i.qty})`).join(', ')
-      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} ${savedAddress.postalCode ? `(${savedAddress.postalCode})` : ''} | Ekspedisi: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
+      const fullAddressString = `[${savedAddress.label}] ${savedAddress.name} (${savedAddress.phone}) - ${savedAddress.detail}, Kel. ${savedAddress.subDistrict}, Kec. ${savedAddress.district}, ${savedAddress.city}, ${savedAddress.province} (${savedAddress.postalCode}) | Ekspedisi: ${selectedShipping.courier} ${selectedShipping.service} | Catatan: ${note || '-'}`
 
       const { error: dbError } = await supabase.from('orders').insert([
         {
@@ -224,7 +261,7 @@ export default function Home() {
 
       if (dbError) throw dbError
 
-      alert('Pesanan Anda berhasil dikirim! Pengiriman dari Tangerang Selatan.')
+      alert('Pesanan Anda berhasil dikirim!')
       setCart([])
       setIsCartOpen(false)
       setCartStep(1)
@@ -353,7 +390,7 @@ export default function Home() {
                     <div style={{ fontSize: '0.85rem', color: '#374151' }}>
                       <div style={{ fontWeight: '700' }}>[{savedAddress.label}] {savedAddress.name} ({savedAddress.phone})</div>
                       <div>{savedAddress.detail}</div>
-                      <div>Kec. {savedAddress.district}, {savedAddress.city}, {savedAddress.province} {savedAddress.postalCode ? `(${savedAddress.postalCode})` : ''}</div>
+                      <div>Kel. {savedAddress.subDistrict}, Kec. {savedAddress.district}, {savedAddress.city}, {savedAddress.province} ({savedAddress.postalCode})</div>
                       <button onClick={() => setShowAddressModal(true)} style={{ marginTop: '8px', color: '#008b9b', background: 'none', border: 'none', fontWeight: '700', padding: 0, cursor: 'pointer' }}>Ganti Alamat</button>
                     </div>
                   ) : (
@@ -494,32 +531,43 @@ export default function Home() {
 
               <textarea placeholder="Alamat Detail (Jalan, Nomor Rumah, RT/RW, Patokan)" required rows={2} value={addrDetail} onChange={(e) => setAddrDetail(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
 
-              {/* 1. SELECT PROVINSI */}
-              <select required value={selectedProv} onChange={handleProvChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+              {/* DYNAMIC API DROPDOWNS */}
+              <select required value={selectedProv.id} onChange={handleProvChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
                 <option value="">-- Pilih Provinsi --</option>
-                {Object.keys(WILAYAH_DATA).map((prov) => (
-                  <option key={prov} value={prov}>{prov}</option>
+                {provinces.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
 
-              {/* 2. SELECT KOTA / KABUPATEN */}
-              <select required disabled={!selectedProv} value={selectedCity} onChange={handleCityChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+              <select required disabled={!selectedProv.id || loadingArea} value={selectedCity.id} onChange={handleCityChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
                 <option value="">-- Pilih Kota / Kabupaten --</option>
-                {selectedProv && Object.keys(WILAYAH_DATA[selectedProv]).map((city) => (
-                  <option key={city} value={city}>{city}</option>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
 
-              {/* 3. SELECT KECAMATAN */}
-              <select required disabled={!selectedCity} value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+              <select required disabled={!selectedCity.id || loadingArea} value={selectedDistrict.id} onChange={handleDistrictChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
                 <option value="">-- Pilih Kecamatan --</option>
-                {selectedProv && selectedCity && WILAYAH_DATA[selectedProv][selectedCity].map((dist) => (
-                  <option key={dist} value={dist}>{dist}</option>
+                {districts.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
 
-              {/* 4. INPUT KODE POS */}
-              <input type="text" placeholder="Kode Pos (Contoh: 15412)" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
+              <select required disabled={!selectedDistrict.id || loadingArea} value={selectedSubDistrict.id} onChange={handleSubDistrictChange} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                <option value="">-- Pilih Kelurahan / Desa --</option>
+                {subDistricts.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+
+              {/* AUTO GENERATED KODE POS */}
+              <input
+                type="text"
+                placeholder="Kode Pos (Otomatis)"
+                value={postalCode}
+                readOnly
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', background: '#f3f4f6', cursor: 'not-allowed', fontWeight: 'bold' }}
+              />
 
               <button type="submit" style={{ padding: '12px', background: '#008b9b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
                 Simpan & Hitung Ongkir
