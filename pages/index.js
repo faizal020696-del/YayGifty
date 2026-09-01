@@ -2,114 +2,57 @@ import React, { useState } from 'react';
 import FormAlamat from '../lib/FormAlamat';
 
 export default function Home() {
-  // State Checkout & Shipping
-  const [shippingAddress, setShippingAddress] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCourier, setSelectedCourier] = useState('');
+  const [savedAddress, setSavedAddress] = useState(null);
 
-  // Dummy opsi ongkir (Nanti disambungin ke API Biteship/RajaOngkir)
-  const shippingOptions = [
-    { id: 'jne-reg', courier: 'JNE', service: 'Reguler (1-2 Hari)', price: 12000 },
-    { id: 'sicepat-reg', courier: 'SiCepat', service: 'Gokil / Reguler (1-2 Hari)', price: 11000 },
-    { id: 'jnt-ez', courier: 'J&T', service: 'EZ (1-3 Hari)', price: 13000 },
-  ];
-
-  // Callback saat user menyimpan alamat di FormAlamat
-  const handleSaveAddress = (addressData) => {
-    setShippingAddress(addressData);
+  const handleSaveAddress = (data) => {
+    setSavedAddress(data);
     setIsModalOpen(false);
+    alert('Alamat berhasil disimpan!');
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Checkout YayGifty</h1>
+    <div style={{ padding: '30px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+      {/* HEADER / TAMPILAN UTAMA LU */}
+      <h1>Selamat Datang di YayGifty 🎁</h1>
+      <p>Aplikasi kado & gift card terbaik.</p>
 
-      {/* STEP 1: ALAMAT PENGIRIMAN */}
-      <section style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2>1. Alamat Pengiriman</h2>
-        
-        {shippingAddress ? (
+      <div style={{ marginTop: '20px', padding: '20px', border: '1px dashed #ccc', borderRadius: '8px' }}>
+        <h3>Alamat Pengiriman Saya</h3>
+        {savedAddress ? (
           <div>
-            <p style={{ margin: '5px 0' }}><strong>Penerima:</strong> {shippingAddress.namaPenerima} ({shippingAddress.noHp})</p>
-            <p style={{ margin: '5px 0' }}><strong>Alamat Lengkap:</strong> {shippingAddress.detailAlamat}</p>
-            <p style={{ margin: '5px 0' }}>
-              <strong>Wilayah:</strong> {shippingAddress.villageName}, {shippingAddress.districtName}, {shippingAddress.cityName}, {shippingAddress.provinceName}
-            </p>
-            <p style={{ margin: '5px 0' }}><strong>Kode Pos:</strong> {shippingAddress.postalCode}</p>
-            
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              style={{ marginTop: '10px', padding: '6px 12px', background: '#eee', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Ubah Alamat
-            </button>
+            <p><strong>Penerima:</strong> {savedAddress.namaPenerima} ({savedAddress.noHp})</p>
+            <p><strong>Alamat:</strong> {savedAddress.detailAlamat}</p>
+            <p><strong>Wilayah:</strong> {savedAddress.villageName}, {savedAddress.districtName}, {savedAddress.cityName}, {savedAddress.provinceName}</p>
           </div>
         ) : (
-          <div>
-            <p style={{ color: '#666' }}>Belum ada alamat pengiriman yang dipilih.</p>
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              style={{ padding: '8px 16px', background: '#0070f3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              + Tambah Alamat Pengiriman
-            </button>
-          </div>
+          <p style={{ color: '#777' }}>Belum ada alamat yang tersimpan.</p>
         )}
-      </section>
 
-      {/* STEP 2: METODE PENGIRIMAN & ONGKIR */}
-      <section style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '20px', opacity: shippingAddress ? 1 : 0.5 }}>
-        <h2>2. Opsi Pengiriman</h2>
-        {!shippingAddress ? (
-          <p style={{ color: '#888', fontStyle: 'italic' }}>Silakan isi alamat pengiriman terlebih dahulu.</p>
-        ) : (
-          <div>
-            {shippingOptions.map((option) => (
-              <div key={option.id} style={{ marginBottom: '10px' }}>
-                <label style={{ cursor: 'pointer' }}>
-                  <input 
-                    type="radio" 
-                    name="shipping" 
-                    value={option.id}
-                    checked={selectedCourier === option.id}
-                    onChange={() => setSelectedCourier(option.id)}
-                  />
-                  <strong> {option.courier}</strong> - {option.service} (Rp {option.price.toLocaleString('id-ID')})
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* STEP 3: PEMBAYARAN */}
-      <section style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '20px', opacity: selectedCourier ? 1 : 0.5 }}>
-        <h2>3. Ringkasan & Pembayaran</h2>
         <button 
-          disabled={!shippingAddress || !selectedCourier}
+          onClick={() => setIsModalOpen(true)}
           style={{ 
-            width: '100%', 
-            padding: '12px', 
-            background: shippingAddress && selectedCourier ? '#22c55e' : '#ccc', 
+            marginTop: '10px', 
+            padding: '10px 20px', 
+            background: '#0070f3', 
             color: '#fff', 
-            fontWeight: 'bold', 
             border: 'none', 
             borderRadius: '6px', 
-            cursor: shippingAddress && selectedCourier ? 'pointer' : 'not-allowed' 
+            cursor: 'pointer',
+            fontWeight: 'bold'
           }}
-          onClick={() => alert('Pesanan berhasil dibuat!')}
         >
-          Bayar Sekarang
+          {savedAddress ? 'Ubah Alamat' : '+ Tambah / Atur Alamat'}
         </button>
-      </section>
+      </div>
 
-      {/* MODAL FORM ALAMAT */}
+      {/* POP-UP / MODAL FORM ALAMAT */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
         }}>
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#fff', padding: '25px', borderRadius: '10px', width: '90%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
             <FormAlamat 
               onSave={handleSaveAddress} 
               onClose={() => setIsModalOpen(false)} 
